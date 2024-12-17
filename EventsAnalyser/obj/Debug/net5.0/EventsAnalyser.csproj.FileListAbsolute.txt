@@ -1,0 +1,16 @@
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\EventsAnalyser.exe
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\EventsAnalyser.deps.json
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\EventsAnalyser.runtimeconfig.json
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\EventsAnalyser.runtimeconfig.dev.json
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\EventsAnalyser.dll
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\ref\EventsAnalyser.dll
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\EventsAnalyser.pdb
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\obj\Debug\net5.0\EventsAnalyser.csproj.AssemblyReference.cache
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\obj\Debug\net5.0\EventsAnalyser.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\obj\Debug\net5.0\EventsAnalyser.AssemblyInfoInputs.cache
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\obj\Debug\net5.0\EventsAnalyser.AssemblyInfo.cs
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\obj\Debug\net5.0\EventsAnalyser.csproj.CoreCompileInputs.cache
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\obj\Debug\net5.0\EventsAnalyser.dll
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\obj\Debug\net5.0\ref\EventsAnalyser.dll
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\obj\Debug\net5.0\EventsAnalyser.pdb
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\obj\Debug\net5.0\EventsAnalyser.genruntimeconfig.cache
