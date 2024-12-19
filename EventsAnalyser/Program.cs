@@ -1,35 +1,33 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
-using System.Reflection;
 
-namespace EventProviderExample
+namespace EventGen
 {
     class Program
     {
-        static void Main(string[] args)
-        {
+        static List<EventSource> getProviders(){
             var eventSources = EventSource.GetSources().ToList();
-
             Console.WriteLine("Доступные провайдеры событий:");
             foreach (var eventSource in eventSources)
                 Console.WriteLine($"- {eventSource.Name}");
             Console.WriteLine();
+            return eventSources;
+        }
 
+
+        static void Main(string[] args) {
+            var eventSources = getProviders();
             foreach (var eventSource in eventSources) {
-                Console.WriteLine($"Воспроизведение событий для провайдера: {eventSource.Name}");
-                try {
-                    var methods = eventSource.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                    var eventMethods = methods.Where(m => m.Name.StartsWith("Write")).ToList(); // Методы, начинающиеся с "Write" - это события
-
-                    foreach (var method in eventMethods)
-                        Console.WriteLine($"  Метод события: {method.Name}");
-
-                } catch (Exception ex) {
-                    Console.WriteLine($"Ошибка при обработке событий для {eventSource.Name}: {ex.Message}");
+                if (eventSource.Name == "Microsoft-Windows-DotNETRuntime")
+                    Console.WriteLine($"Воспроизведение событий для провайдера: {eventSource.Name}");
+                    try {
+                        DotNetRuntime_EG.Produce();
+                    } catch (Exception ex) {
+                        Console.WriteLine($"Ошибка при обработке событий для {eventSource.Name}: {ex.Message}");
+                    }
                 }
-                Console.WriteLine();
-            }
             Console.Write("Any key to finish: ");
             Console.ReadLine();
         }
