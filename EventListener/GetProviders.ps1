@@ -5,5 +5,5 @@ foreach ($line in $output) {
         $guids += $line.Substring($line.IndexOf('{'), 38)
     }
 }
-$guids | Out-File -FilePath .\guids.txt
-#$guids
+#$guids | Out-File -FilePath .\guids.txt
+$guids
