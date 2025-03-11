@@ -9,7 +9,6 @@ namespace EventGen
 {
     public class DotNetRuntime_EG
     {
-        // Conflict Event
         public static void GenerateContentionEvent() {
             object lockObj = new object();
             void LockingOperation() {
@@ -26,7 +25,6 @@ namespace EventGen
             Console.WriteLine("+ Conflict Event");
         }
 
-        // Garbage COllector Event
         public static void GenerateGCEvent() {
             //Console.WriteLine("Start GC");
             GC.Collect();
@@ -35,7 +33,6 @@ namespace EventGen
             Console.WriteLine("+ Garbage COllector Event");
         }
 
-        // Exception Event
         public static void GenerateExceptionEvent() {
             try {
                 throw new InvalidOperationException("");
@@ -45,7 +42,6 @@ namespace EventGen
             Console.WriteLine("+ Exception Event");
         }
 
-        // Interoperations Event
         public static void GenerateInteropEvent() {
             //Console.WriteLine("Memory opperations");
             IntPtr memory = Marshal.AllocHGlobal(100);
@@ -53,14 +49,12 @@ namespace EventGen
             Console.WriteLine("+ Interoperations Event");
         }
 
-        //Loader Event
         public static void GenerateLoaderEvent() {
             //Console.WriteLine("Load module");
             Assembly.Load("System.Linq");
             Console.WriteLine("+ Loader Event");
         }
 
-        // Method Event
         public static void GenerateMethodEvent() {
             foo();
 
@@ -69,7 +63,6 @@ namespace EventGen
             }
         }
 
-        // Thread Event
         public static void GenerateThreadEvent()
         {
             Thread thread = new Thread(() => Console.Write(""));
@@ -78,14 +71,12 @@ namespace EventGen
             Console.WriteLine("+ Thread Event");
         }
 
-        // Type Event
         public static void GenerateTypeEvent() {
             //Console.WriteLine("Initialize new list");
             var list = new List<int>();
             Console.WriteLine("+ Type Event");
         }
 
-        // Compilation Event
         public static void GenerateTieredCompilationEvent() {
             //Console.WriteLine("Compile...");
             PerformJITCompilation();
