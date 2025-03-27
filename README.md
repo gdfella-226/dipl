@@ -21,7 +21,7 @@
 #### Порядок запуска:
 
 1. Установить [.NET Framework](https://dotnet.microsoft.com/en-us/download/dotnet-framework) версии не ниже 5.0
-2. Открыть файл решения ```./EventsAnalyser/EventsAnalyser.sln``` в среде разработки, поддерживающей .NET (MS Visual Studio или VS Code)
+2. Открыть файл решения ```./EventListener/EventListener.sln``` в среде разработки, поддерживающей .NET (MS Visual Studio или VS Code)
 3. Запустить проект
 
 #### Результат работы:
