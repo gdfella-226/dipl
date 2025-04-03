@@ -3,7 +3,6 @@ C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\EventsAnalyser.
 C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\EventsAnalyser.runtimeconfig.json
 C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\EventsAnalyser.runtimeconfig.dev.json
 C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\EventsAnalyser.dll
-C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\ref\EventsAnalyser.dll
 C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\EventsAnalyser.pdb
 C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\obj\Debug\net5.0\EventsAnalyser.csproj.AssemblyReference.cache
 C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\obj\Debug\net5.0\EventsAnalyser.GeneratedMSBuildEditorConfig.editorconfig
@@ -37,4 +36,6 @@ C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\System.Collecti
 C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\System.Diagnostics.DiagnosticSource.dll
 C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\System.Reflection.Metadata.dll
 C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\bin\Debug\net5.0\System.Runtime.CompilerServices.Unsafe.dll
-C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\obj\Debug\net5.0\EventsAnalyser.csproj.CopyComplete
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\obj\Debug\net5.0\EventsAnalyser.sourcelink.json
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\obj\Debug\net5.0\EventsAn.7480FB85.Up2Date
+C:\Users\Danil\Documents\ETW\dev\EventsAnalyser\obj\Debug\net5.0\refint\EventsAnalyser.dll

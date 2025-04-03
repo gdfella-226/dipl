@@ -38,3 +38,4 @@ C:\Users\Danil\Documents\ETW\dev\EventListener\obj\Debug\net5.0\EventListener.dl
 C:\Users\Danil\Documents\ETW\dev\EventListener\obj\Debug\net5.0\ref\EventListener.dll
 C:\Users\Danil\Documents\ETW\dev\EventListener\obj\Debug\net5.0\EventListener.pdb
 C:\Users\Danil\Documents\ETW\dev\EventListener\obj\Debug\net5.0\EventListener.genruntimeconfig.cache
+C:\Users\Danil\Documents\ETW\dev\EventListener\obj\Debug\net5.0\EventListener.sourcelink.json
