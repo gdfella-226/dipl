@@ -12,27 +12,18 @@ using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.StackSources;
 
 
-
 class Program
 {
-    // WinAPI импорт для получения информации о пользователе процесса
     [DllImport("advapi32.dll", SetLastError = true)]
     static extern bool OpenProcessToken(IntPtr ProcessHandle, uint DesiredAccess, out IntPtr TokenHandle);
-
     [DllImport("advapi32.dll", SetLastError = true)]
-    static extern bool GetTokenInformation(
-        IntPtr TokenHandle,
-        uint TokenInformationClass,
-        IntPtr TokenInformation,
-        uint TokenInformationLength,
-        out uint ReturnLength);
-
+    static extern bool GetTokenInformation(IntPtr TokenHandle, uint TokenInformationClass, IntPtr TokenInformation, uint TokenInformationLength, out uint ReturnLength);
     [DllImport("kernel32.dll", SetLastError = true)]
     static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
-
     [DllImport("kernel32.dll", SetLastError = true)]
     static extern bool CloseHandle(IntPtr hObject);
     private static readonly object _lock = new object();
+
 
     static void Main()
     {
@@ -55,32 +46,12 @@ class Program
                     KernelTraceEventParser.Keywords.NetworkTCPIP |
                     KernelTraceEventParser.Keywords.FileIOInit |
                     KernelTraceEventParser.Keywords.ImageLoad |
-                    KernelTraceEventParser.Keywords.Registry);
+                    KernelTraceEventParser.Keywords.Registry |
+                    KernelTraceEventParser.Keywords.Process |
+                    KernelTraceEventParser.Keywords.DiskFileIO);
                 session.EnableProvider(
                     new Guid("54849625-5478-4994-A5BA-3E3B0328C30D"), // Microsoft-Windows-Authentication
                     TraceEventLevel.Informational, 0xffffffffffffffff);
-
-                /*session.Source.Kernel.ProcessStart += data =>
-                {
-                    string username = ProcessOwner.GetProcessOwner(data.ProcessID);
-                    Console.WriteLine($"[PROCESS START {data.ID}] " +
-                        $"\n\tTime: {DateTime.Now:HH:mm:ss.fff}" +
-                        $"\n\tPID: {data.ProcessID}" +
-                        $"\n\tUser: {username}" +
-                        $"\n\tName: {data.ProcessName}" +
-                        $"\n\tCmdLine: {data.CommandLine}\n");
-                };*/
-
-                /*session.Source.Kernel.ProcessStop += data =>
-                {
-                    string username = ProcessOwner.GetProcessOwner(data.ProcessID);
-                    Console.WriteLine($"[PROCESS STOP {data.ID}] " +
-                        $"\n\tTime: {DateTime.Now:HH:mm:ss.fff}" +
-                        $"\n\tPID: {data.ProcessID}" +
-                        $"\n\tUser: {username}" +
-                        $"\n\tName: {data.ProcessName}" +
-                        $"\n\tCmdLine: {data.CommandLine}\n");
-                };*/
 
                 /*session.Source.Dynamic.AddCallbackForProviderEvent(
                     "Microsoft-Windows-Security-Auditing",
@@ -106,70 +77,38 @@ class Program
                             $"\n\tSessionID: {data.PayloadByName("SessionId")}\n");
                     });*/
 
-                session.Source.Kernel.TcpIpConnect += data =>
+                session.Source.Kernel.All += data =>
                 {
+                    string payload = "N/A";
+                    string opcodeName = data.OpcodeName ?? "N/A";
+
+                    // Обработка файловых операций
+                    if (opcodeName.StartsWith("File"))
+                        payload = data.PayloadByName("FileName")?.ToString() 
+                            ?? data.PayloadString(0) 
+                            ?? "N/A";
+                    // Обработка операций с реестром
+                    else if (opcodeName.StartsWith("Reg"))
+                        payload = $"{data.PayloadByName("KeyName")}={data.PayloadByName("ValueName")}";
+                    // Обработка сетевых операций
+                    else if (opcodeName is "Connect" or "Accept")
+                        payload = $"{data.PayloadByName("daddr")}:{data.PayloadByName("dport")}";
+
+                    if (data.ProcessName != "EventListener" && payload != "N/A"){
+                            Console.WriteLine($"{data.OpcodeName} ({data.Opcode})");
+                            var opcode = data.Opcode.ToString() != "" ? data.Opcode.ToString() : "0" ;
+                            var opcName = data.OpcodeName.ToString() != "" ? data.OpcodeName.ToString() : "N/A" ;
+                            var time = data.TimeStamp.ToString() != "" ? data.TimeStamp.ToString() : "N/A" ;
+                            var pid = data.ProcessID.ToString() != "" ? data.ProcessID.ToString() : "0" ;
+                            var name = data.ProcessName.ToString() != "" ? data.ProcessName.ToString() : "N/A" ;
+                            var username = ProcessOwner.GetProcessOwner(data.ProcessID);
+                            var line = $"{opcode}, {opcName}, {time}, {pid}, {name}, {username}, {payload}";
+                            lock (_lock) {
+                                writer.WriteLine(line);
+                                writer.Flush();
+                            }
+                        }
                     
-
-                    string username = ProcessOwner.GetProcessOwner(data.ProcessID);
-                    Console.WriteLine($"[{data.OpcodeName} ({data.Opcode})] " +
-                        $"\n\tTime: {data.TimeStamp}" +
-                        $"\n\tPID: {data.ProcessID}" +
-                        $"\n\tUser: {username}" +
-                        $"\n\tName: {data.ProcessName}" +
-                        $"\n\tAddress: {data.daddr}:{data.dport}");
-                    var line = $"{data.Opcode}, {data.OpcodeName}, {data.TimeStamp}, {data.ProcessID}, {data.ProcessName}, {username}, {data.daddr}:{data.dport}";
-                    lock (_lock) {
-                        writer.WriteLine(line);
-                        writer.Flush();
-                    }
-                };
-
-                session.Source.Kernel.FileIOFileCreate += data =>
-                {
-                    string username = ProcessOwner.GetProcessOwner(data.ProcessID);
-                    Console.WriteLine($"[{data.OpcodeName} ({data.Opcode})] " +
-                        $"\n\tTime: {DateTime.Now:HH:mm:ss.fff}" +
-                        $"\n\tPID: {data.ProcessID}" +
-                        $"\n\tUser: {username}" +
-                        $"\n\tName: {data.ProcessName}" +
-                        $"\n\tFile: {data.FileName}");
-                    var line = $"{data.Opcode}, {data.OpcodeName}, {data.TimeStamp}, {data.ProcessID}, {data.ProcessName}, {username}, {data.FileName}";
-                    lock (_lock) {
-                        writer.WriteLine(line);
-                        writer.Flush();
-                    }
-                };
-
-                session.Source.Kernel.FileIOFileDelete += data =>
-                {
-                    string username = ProcessOwner.GetProcessOwner(data.ProcessID);
-                    Console.WriteLine($"[{data.OpcodeName} ({data.Opcode})] " +
-                        $"\n\tTime: {DateTime.Now:HH:mm:ss.fff}" +
-                        $"\n\tPID: {data.ProcessID}" +
-                        $"\n\tUser: {username}" +
-                        $"\n\tName: {data.ProcessName}" +
-                        $"\n\tFile: {data.FileName}");
-                    var line = $"{data.Opcode}, {data.OpcodeName}, {data.TimeStamp}, {data.ProcessID}, {data.ProcessName}, {username}, {data.FileName}";
-                    lock (_lock) {
-                        writer.WriteLine(line);
-                        writer.Flush();
-                    }
-                };
-
-                session.Source.Kernel.FileIOWrite += data =>
-                {
-                    string username = ProcessOwner.GetProcessOwner(data.ProcessID);
-                    Console.WriteLine($"[{data.OpcodeName} ({data.Opcode})] " +
-                        $"\n\tTime: {DateTime.Now:HH:mm:ss.fff}" +
-                        $"\n\tPID: {data.ProcessID}" +
-                        $"\n\tUser: {username}" +
-                        $"\n\tName: {data.ProcessName}" +
-                        $"\n\tFile: {data.FileName}");
-                    var line = $"{data.Opcode}, {data.OpcodeName}, {data.TimeStamp}, {data.ProcessID}, {data.ProcessName}, {username}, {data.FileName}";
-                    lock (_lock) {
-                        writer.WriteLine(line);
-                        writer.Flush();
-                    }
                 };
 
                 Console.WriteLine("Системный мониторинг запущен. Нажмите Enter для остановки...");
