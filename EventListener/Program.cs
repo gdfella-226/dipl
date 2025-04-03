@@ -1,106 +1,182 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Diagnostics;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.Parsers;
-using System.Diagnostics.Eventing.Reader;
-using Microsoft.Win32;
+using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Tracing.StackSources;
+
+
 
 class Program
 {
+    // WinAPI импорт для получения информации о пользователе процесса
+    [DllImport("advapi32.dll", SetLastError = true)]
+    static extern bool OpenProcessToken(IntPtr ProcessHandle, uint DesiredAccess, out IntPtr TokenHandle);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    static extern bool GetTokenInformation(
+        IntPtr TokenHandle,
+        uint TokenInformationClass,
+        IntPtr TokenInformation,
+        uint TokenInformationLength,
+        out uint ReturnLength);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool CloseHandle(IntPtr hObject);
+    private static readonly object _lock = new object();
+
     static void Main()
     {
-        try {
-            using (var session = new TraceEventSession("DiplETWSession")) {     //, "C:\\Users\\Danil\\Documents\\ETW\\output.etl"
-                /*string registryPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT\Publishers";
-                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(registryPath)) {
-                    if (key != null)
-                        foreach (string providerGuid in key.GetSubKeyNames())
-                            try {
-                                session.EnableProvider(providerGuid, TraceEventLevel.Informational);
-                                Console.WriteLine($"Включен провайдер: {providerGuid}");
-                            } catch (Exception ex) {
-                                Console.WriteLine($"Ошибка при включении провайдера {providerGuid}: {ex.Message}");
-                            }
-                }*/
+        if (!(TraceEventSession.IsElevated() ?? false)) {
+            Console.WriteLine("Admin privelegies are required!");
+            return;
+        }
+        
+        string filePath = @"C:\Users\Danil\Documents\ETW\custom-output.csv";
+        List<string> csv_data = new List<string>();
+        TraceEventSession.GetActiveSession("Dipl")?.Stop();
+        if(File.Exists(filePath))
+            File.Delete(filePath);
 
-                var kernelProviderGuid = new Guid("9E814AAD-3204-11D2-9A82-006008A86939");
+        using (var writer = new StreamWriter(filePath, append: true)) {
+            writer.WriteLine("OperationCode, OperationName, Time, PID, ProcessName, User, Payload");
+            using (var session = new TraceEventSession("SystemMonitorSession")) {
                 session.EnableKernelProvider(
-                    KernelTraceEventParser.Keywords.Process | 
-                    KernelTraceEventParser.Keywords.Thread);
+                    KernelTraceEventParser.Keywords.FileIO |
+                    KernelTraceEventParser.Keywords.NetworkTCPIP |
+                    KernelTraceEventParser.Keywords.FileIOInit |
+                    KernelTraceEventParser.Keywords.ImageLoad |
+                    KernelTraceEventParser.Keywords.Registry);
+                session.EnableProvider(
+                    new Guid("54849625-5478-4994-A5BA-3E3B0328C30D"), // Microsoft-Windows-Authentication
+                    TraceEventLevel.Informational, 0xffffffffffffffff);
 
-                // 2. Microsoft-Windows-Authentication for logon events
-                // {DBEEF1C5-1A1A-4772-A2E9-3F2B7B3D22D9}
-                var authProviderGuid = new Guid("DBEEF1C5-1A1A-4772-A2E9-3F2B7B3D22D9");
-                session.EnableProvider(authProviderGuid);
-
-                // 3. Microsoft-Windows-TCPIP for network events
-                // {2F07E2EE-15DB-40F1-90EF-9D7BA282188A}
-                var tcpipProviderGuid = new Guid("2F07E2EE-15DB-40F1-90EF-9D7BA282188A");
-                session.EnableProvider(tcpipProviderGuid);
-
-                // 4. Microsoft-Windows-HttpService for HTTP events
-                // {DD5EF90A-6398-47A4-AD34-4DCECDEF795F}
-                var httpProviderGuid = new Guid("DD5EF90A-6398-47A4-AD34-4DCECDEF795F");
-                session.EnableProvider(httpProviderGuid);
-
-
-                Console.WriteLine("Сбор данных... Нажмите Enter для остановки.");
-                var task = System.Threading.Tasks.Task.Run(() =>
-                {
-                    session.Source.Process();
-                });
-
-                // Установка обработчиков для конкретных событий
                 /*session.Source.Kernel.ProcessStart += data =>
                 {
-                    Console.WriteLine($"Процесс создан: PID={data.ProcessID} Имя={data.ProcessName} " +
-                                      $"Командная строка={data.CommandLine}");
-                };
-
-                session.Source.Kernel.ProcessStop += data =>
-                {
-                    Console.WriteLine($"Процесс завершен: PID={data.ProcessID} Имя={data.ProcessName}");
+                    string username = ProcessOwner.GetProcessOwner(data.ProcessID);
+                    Console.WriteLine($"[PROCESS START {data.ID}] " +
+                        $"\n\tTime: {DateTime.Now:HH:mm:ss.fff}" +
+                        $"\n\tPID: {data.ProcessID}" +
+                        $"\n\tUser: {username}" +
+                        $"\n\tName: {data.ProcessName}" +
+                        $"\n\tCmdLine: {data.CommandLine}\n");
                 };*/
 
-                // Для событий входа/выхода нужно использовать соответствующие провайдеры
-                // Это пример, конкретные события могут отличаться
-                session.Source.Dynamic.AddCallbackForProviderEvent(
-                    "Microsoft-Windows-Authentication",
-                    "Logon", 
+                /*session.Source.Kernel.ProcessStop += data =>
+                {
+                    string username = ProcessOwner.GetProcessOwner(data.ProcessID);
+                    Console.WriteLine($"[PROCESS STOP {data.ID}] " +
+                        $"\n\tTime: {DateTime.Now:HH:mm:ss.fff}" +
+                        $"\n\tPID: {data.ProcessID}" +
+                        $"\n\tUser: {username}" +
+                        $"\n\tName: {data.ProcessName}" +
+                        $"\n\tCmdLine: {data.CommandLine}\n");
+                };*/
+
+                /*session.Source.Dynamic.AddCallbackForProviderEvent(
+                    "Microsoft-Windows-Security-Auditing",
+                    "4624",
                     data =>
                     {
-                        Console.WriteLine($"Вход в систему: Пользователь={data.PayloadByName("TargetUserName")} " +
-                                          $"Домен={data.PayloadByName("TargetDomainName")}");
+                        Console.WriteLine($"[LOGON EVENT] " +
+                            $"\n\tTime: {DateTime.Now:HH:mm:ss.fff}" +
+                            $"\n\tUser: {data.PayloadByName("TargetUserName")}" +
+                            $"\n\tDomain: {data.PayloadByName("TargetDomainName")}" +
+                            $"\n\tSessionID: {data.PayloadByName("SessionId")}" +
+                            $"\n\tLogonType: {data.PayloadByName("LogonType")}\n");
                     });
 
                 session.Source.Dynamic.AddCallbackForProviderEvent(
-                    "Microsoft-Windows-Authentication",
-                    "Logoff", 
+                    "Microsoft-Windows-Security-Auditing",
+                    "4634",
                     data =>
                     {
-                        Console.WriteLine($"Выход из системы: Пользователь={data.PayloadByName("TargetUserName")}");
-                    });
+                        Console.WriteLine($"[LOGOFF EVENT] " +
+                            $"\n\tTime: {DateTime.Now:HH:mm:ss.fff}" +
+                            $"\n\tUser: {data.PayloadByName("TargetUserName")}" +
+                            $"\n\tSessionID: {data.PayloadByName("SessionId")}\n");
+                    });*/
 
-                // Для HTTP трафика можно использовать Microsoft-Windows-HttpService
-                session.Source.Dynamic.AddCallbackForProviderEvent(
-                    "Microsoft-Windows-HttpService",
-                    "SendRequest", 
-                    data =>
-                    {
-                        Console.WriteLine($"HTTP запрос: URL={data.PayloadByName("Url")}");
-                    });
+                session.Source.Kernel.TcpIpConnect += data =>
+                {
+                    
 
+                    string username = ProcessOwner.GetProcessOwner(data.ProcessID);
+                    Console.WriteLine($"[{data.OpcodeName} ({data.Opcode})] " +
+                        $"\n\tTime: {data.TimeStamp}" +
+                        $"\n\tPID: {data.ProcessID}" +
+                        $"\n\tUser: {username}" +
+                        $"\n\tName: {data.ProcessName}" +
+                        $"\n\tAddress: {data.daddr}:{data.dport}");
+                    var line = $"{data.Opcode}, {data.OpcodeName}, {data.TimeStamp}, {data.ProcessID}, {data.ProcessName}, {username}, {data.daddr}:{data.dport}";
+                    lock (_lock) {
+                        writer.WriteLine(line);
+                        writer.Flush();
+                    }
+                };
+
+                session.Source.Kernel.FileIOFileCreate += data =>
+                {
+                    string username = ProcessOwner.GetProcessOwner(data.ProcessID);
+                    Console.WriteLine($"[{data.OpcodeName} ({data.Opcode})] " +
+                        $"\n\tTime: {DateTime.Now:HH:mm:ss.fff}" +
+                        $"\n\tPID: {data.ProcessID}" +
+                        $"\n\tUser: {username}" +
+                        $"\n\tName: {data.ProcessName}" +
+                        $"\n\tFile: {data.FileName}");
+                    var line = $"{data.Opcode}, {data.OpcodeName}, {data.TimeStamp}, {data.ProcessID}, {data.ProcessName}, {username}, {data.FileName}";
+                    lock (_lock) {
+                        writer.WriteLine(line);
+                        writer.Flush();
+                    }
+                };
+
+                session.Source.Kernel.FileIOFileDelete += data =>
+                {
+                    string username = ProcessOwner.GetProcessOwner(data.ProcessID);
+                    Console.WriteLine($"[{data.OpcodeName} ({data.Opcode})] " +
+                        $"\n\tTime: {DateTime.Now:HH:mm:ss.fff}" +
+                        $"\n\tPID: {data.ProcessID}" +
+                        $"\n\tUser: {username}" +
+                        $"\n\tName: {data.ProcessName}" +
+                        $"\n\tFile: {data.FileName}");
+                    var line = $"{data.Opcode}, {data.OpcodeName}, {data.TimeStamp}, {data.ProcessID}, {data.ProcessName}, {username}, {data.FileName}";
+                    lock (_lock) {
+                        writer.WriteLine(line);
+                        writer.Flush();
+                    }
+                };
+
+                session.Source.Kernel.FileIOWrite += data =>
+                {
+                    string username = ProcessOwner.GetProcessOwner(data.ProcessID);
+                    Console.WriteLine($"[{data.OpcodeName} ({data.Opcode})] " +
+                        $"\n\tTime: {DateTime.Now:HH:mm:ss.fff}" +
+                        $"\n\tPID: {data.ProcessID}" +
+                        $"\n\tUser: {username}" +
+                        $"\n\tName: {data.ProcessName}" +
+                        $"\n\tFile: {data.FileName}");
+                    var line = $"{data.Opcode}, {data.OpcodeName}, {data.TimeStamp}, {data.ProcessID}, {data.ProcessName}, {username}, {data.FileName}";
+                    lock (_lock) {
+                        writer.WriteLine(line);
+                        writer.Flush();
+                    }
+                };
+
+                Console.WriteLine("Системный мониторинг запущен. Нажмите Enter для остановки...");
+                var processingTask = Task.Run(() => session.Source.Process());
                 Console.ReadLine();
                 session.Stop();
-
-
             }
-        }
-        catch (Exception ex) {
-            Console.WriteLine($"Ошибка: {ex.Message}");
         }
     }
 }
