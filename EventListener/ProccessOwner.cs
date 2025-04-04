@@ -31,6 +31,8 @@ class ProcessOwner
     const uint PROCESS_QUERY_INFORMATION = 0x0400;
 
     public static string GetProcessOwner(int processId) {
+        if(processId == -1)
+            return "Kernel";
         IntPtr processHandle = OpenProcess(PROCESS_QUERY_INFORMATION, false, processId);
         if (processHandle == IntPtr.Zero)
             return $"N/A (Error: {Marshal.GetLastWin32Error()})";

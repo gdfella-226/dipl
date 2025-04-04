@@ -1,7 +1,9 @@
 ﻿using System;
 using System.IO;
+
 using System.Linq;
 using System.Net;
+using Microsoft.Win32;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -49,11 +51,46 @@ class Program
                     KernelTraceEventParser.Keywords.Registry |
                     KernelTraceEventParser.Keywords.Process |
                     KernelTraceEventParser.Keywords.DiskFileIO);
+                /*session.EnableProvider(
+                    new Guid("54849625-5478-4994-A5BA-3E3B0328C30D"),
+                    TraceEventLevel.Informational,
+                    0x80000000000 | // Audit Success
+                    0x90000000000
+                );
                 session.EnableProvider(
-                    new Guid("54849625-5478-4994-A5BA-3E3B0328C30D"), // Microsoft-Windows-Authentication
-                    TraceEventLevel.Informational, 0xffffffffffffffff);
+                    new Guid("DBEEF1C5-1A1A-4772-A2E9-3F2B7B3D22D9"),
+                    TraceEventLevel.Verbose,
+                    0x1 
+                );*/
+                /*string registryPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT\Publishers";
+                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(registryPath)) {
+                    if (key != null)
+                        foreach (string providerGuid in key.GetSubKeyNames())
+                            try {
+                                session.EnableProvider(providerGuid, TraceEventLevel.Informational);
+                                if (providerGuid == "{DBEEF1C5-1A1A-4772-A2E9-3F2B7B3D22D9}")
+                                    Console.WriteLine($"Включен провайдер: {providerGuid}");
+                            } catch (Exception ex) {
+                                Console.WriteLine($"Ошибка при включении провайдера {providerGuid}: {ex.Message}");
+                            }
+                }*/
 
-                /*session.Source.Dynamic.AddCallbackForProviderEvent(
+                /*session.Source.Dynamic.All += data =>
+                {
+                    
+                    if (data.ProviderName == "Microsoft-Windows-Security-Auditing")
+                        Console.WriteLine(data.Dump());
+
+                    switch (data.EventName)
+                    {
+                        case "4624": // Вход
+                        case "4634": // Выход
+                        case "4663": // Доступ к файлу
+                            break;
+                    }
+                };
+
+                session.Source.Dynamic.AddCallbackForProviderEvent(
                     "Microsoft-Windows-Security-Auditing",
                     "4624",
                     data =>
@@ -82,17 +119,16 @@ class Program
                     string payload = "N/A";
                     string opcodeName = data.OpcodeName ?? "N/A";
 
-                    // Обработка файловых операций
                     if (opcodeName.StartsWith("File"))
                         payload = data.PayloadByName("FileName")?.ToString() 
                             ?? data.PayloadString(0) 
                             ?? "N/A";
-                    // Обработка операций с реестром
                     else if (opcodeName.StartsWith("Reg"))
                         payload = $"{data.PayloadByName("KeyName")}={data.PayloadByName("ValueName")}";
-                    // Обработка сетевых операций
                     else if (opcodeName is "Connect" or "Accept")
                         payload = $"{data.PayloadByName("daddr")}:{data.PayloadByName("dport")}";
+                    else if (opcodeName.Contains("Process"))
+                        payload = data.PayloadByName("CmdLine").ToString();
 
                     if (data.ProcessName != "EventListener" && payload != "N/A"){
                             Console.WriteLine($"{data.OpcodeName} ({data.Opcode})");
@@ -101,6 +137,8 @@ class Program
                             var time = data.TimeStamp.ToString() != "" ? data.TimeStamp.ToString() : "N/A" ;
                             var pid = data.ProcessID.ToString() != "" ? data.ProcessID.ToString() : "0" ;
                             var name = data.ProcessName.ToString() != "" ? data.ProcessName.ToString() : "N/A" ;
+                            if (pid == "-1")
+                                name = "System";
                             var username = ProcessOwner.GetProcessOwner(data.ProcessID);
                             var line = $"{opcode}, {opcName}, {time}, {pid}, {name}, {username}, {payload}";
                             lock (_lock) {
@@ -110,8 +148,7 @@ class Program
                         }
                     
                 };
-
-                Console.WriteLine("Системный мониторинг запущен. Нажмите Enter для остановки...");
+                Console.WriteLine("Monitoring... Press Enter to stop");
                 var processingTask = Task.Run(() => session.Source.Process());
                 Console.ReadLine();
                 session.Stop();

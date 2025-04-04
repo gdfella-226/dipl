@@ -44,6 +44,14 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "Microsoft.Diagnostics.Tracing.TraceEvent": {
+              "target": "Package",
+              "version": "[3.1.19, )"
+            },
+            "System.Diagnostics.EventLog": {
+              "target": "Package",
+              "version": "[9.0.3, )"
+            },
             "System.Diagnostics.Tracing": {
               "target": "Package",
               "version": "[4.3.0, )"
